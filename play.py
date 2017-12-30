@@ -58,8 +58,8 @@ for i in range(10000):
         canny_img = cv2.Canny(img_rgb, 1, 10)
 
         # 消去小跳棋轮廓对边缘检测结果的干扰
-        for k in range(max_loc1[1], max_loc1[1] + 189):
-            for b in range(max_loc1[0], max_loc1[0] + 100):
+        for k in range(max_loc1[1]-10, max_loc1[1] + 189):
+            for b in range(max_loc1[0]-10, max_loc1[0] + 100):
                 canny_img[k][b] = 0
 
         # 计算物块上沿的坐标
