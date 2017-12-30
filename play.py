@@ -3,6 +3,12 @@ import cv2
 import numpy as np
 import time
 
+# 使用的Python库及对应版本：
+# python 3.6
+# opencv-python 3.3.0
+# numpy 1.13.3
+# 用到了opencv库中的模板匹配和边缘检测功能
+
 
 def get_screenshot(id):
     os.system('adb shell screencap -p /sdcard/%s.png' % str(id))
