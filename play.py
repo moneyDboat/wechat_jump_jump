@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import time
 
+
 # 使用的Python库及对应版本：
 # python 3.6
 # opencv-python 3.3.0
@@ -20,6 +21,22 @@ def jump(distance):
     press_time = int(distance * 1.35)
     cmd = 'adb shell input swipe 320 410 320 410 ' + str(press_time)
     os.system(cmd)
+
+
+def get_center(img_canny, ):
+    # 利用边缘检测的结果寻找物块的上沿和下沿
+    # 进而计算物块的中心点
+    y_top = np.nonzero([max(row) for row in img_canny[400:]])[0][0] + 400
+    x_top = int(np.mean(np.nonzero(canny_img[y_top])))
+
+    y_bottom = y_top + 50
+    for row in range(y_bottom, H):
+        if canny_img[row, x_top] != 0:
+            y_bottom = row
+            break
+
+    x_center, y_center = x_top, (y_top + y_bottom) // 2
+    return img_canny, x_center, y_center
 
 
 # 第一次跳跃的距离是固定的
@@ -42,7 +59,7 @@ for i in range(10000):
 
     # 如果在游戏截图中匹配到带"再玩一局"字样的模板，则循环中止
     res_end = cv2.matchTemplate(img_rgb, temp_end, cv2.TM_CCOEFF_NORMED)
-    if (cv2.minMaxLoc(res_end)[1] > 0.95):
+    if cv2.minMaxLoc(res_end)[1] > 0.95:
         print('Game over!')
         break
 
@@ -57,29 +74,26 @@ for i in range(10000):
     min_val2, max_val2, min_loc2, max_loc2 = cv2.minMaxLoc(res2)
     if max_val2 > 0.95:
         print('found white circle!')
-        x, y = max_loc2[0] + w2 // 2, max_loc2[1] + h2 // 2
+        x_center, y_center = max_loc2[0] + w2 // 2, max_loc2[1] + h2 // 2
     else:
         # 边缘检测
         img_rgb = cv2.GaussianBlur(img_rgb, (5, 5), 0)
         canny_img = cv2.Canny(img_rgb, 1, 10)
+        H, W = canny_img.shape
 
         # 消去小跳棋轮廓对边缘检测结果的干扰
-        for k in range(max_loc1[1]-10, max_loc1[1] + 189):
-            for b in range(max_loc1[0]-10, max_loc1[0] + 100):
+        for k in range(max_loc1[1] - 10, max_loc1[1] + 189):
+            for b in range(max_loc1[0] - 10, max_loc1[0] + 100):
                 canny_img[k][b] = 0
 
-        # 计算物块上沿的坐标
-        y = np.nonzero([max(row) for row in canny_img[400:]])[0][0] + 400
-        x = int(np.mean(np.nonzero(canny_img[y])))
-        y += 50  # 偏移，需要设置得小一点，因为游戏到后面会出现非常小的物块
-        img_rgb = canny_img
+        img_rgb, x_center, y_center = get_center(canny_img)
 
     # 将图片输出以供调试
-    img_rgb = cv2.circle(img_rgb, (x, y), 10, 255, -1)
+    img_rgb = cv2.circle(img_rgb, (x_center, y_center), 10, 255, -1)
     # cv2.rectangle(canny_img, max_loc1, center1_loc, 255, 2)
     cv2.imwrite('last.png', img_rgb)
 
-    distance = (center1_loc[0] - x) ** 2 + (center1_loc[1] - y) ** 2
+    distance = (center1_loc[0] - x_center) ** 2 + (center1_loc[1] - y_center) ** 2
     distance = distance ** 0.5
     jump(distance)
-    time.sleep(3)
+    time.sleep(1.3)
